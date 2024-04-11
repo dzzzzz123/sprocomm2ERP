@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE listofactions SYSTEM "actions.dtd">
+<listofactions>
+	<objecttype name="Custom" resourceBundle="ext.ptc.actions.tableRB">
+	   <action name="exportECRExcelReport">
+			<command windowType="popup" url="netmarkets/jsp/snippetFeature/exportExcel/ExportECRExcelReport.jsp" />
+	   </action>
+	   
+	   <action name="exportECNExcelReport">
+			<command windowType="popup" url="netmarkets/jsp/snippetFeature/exportExcel/ExportECNExcelReport.jsp" />
+	   </action>
+	   
+	   <action name="exportBOMReport">
+			<command windowType="popup" url="netmarkets/jsp/snippetFeature/exportExcel/ExportBOMReport.jsp" />
+	   </action>
+	</objecttype>
+	
+		<!-- Rename -->
+	<objecttype name="sprocomm" resourceBundle="ext.sprocomm.bom.CustomRB">
+		<action name="exportBOM" enabledwhensuspended="true">
+			<command url="servlet/Navigation/SPRExportBOMServlet"
+				windowType="popup" />
+		</action>
+	</objecttype>
+	
+	<objecttype name="ERPWizard" resourceBundle="ext.kingdeeERP.ERPActionsRB">
+		<action name="sendPart2ERP">
+			<command class="ext.kingdeeERP.masterData.Processor" method="execute"/> 
+		</action>
+	</objecttype>
+	
+</listofactions>
+
+
