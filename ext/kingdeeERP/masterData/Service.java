@@ -2,16 +2,16 @@ package ext.kingdeeERP.masterData;
 
 import ext.kingdeeERP.Config;
 import ext.kingdeeERP.util.CommonUtil;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-import org.codehaus.jackson.map.ObjectMapper;
 import wt.part.WTPart;
 
-import java.io.IOException;
 import java.util.ArrayList;
 
 public class Service {
 
-    static Logger logger = Logger.getLogger(Service.class.getName());
+    final static Logger logger = LogManager.getLogger(Service.class);
 
     /**
      * 发送单个部件
@@ -22,7 +22,7 @@ public class Service {
     public static String sendSinglePart2ERP(WTPart part) {
         String result;
         Entity entity = getEntity(part);
-        String json = parseJson(entity);
+        String json = CommonUtil.parseJson(entity);
         System.out.println(json);
         result = CommonUtil.requestInterface(Config.PartUrl(), "", "", json, "POST", null);
         return result;
@@ -43,12 +43,15 @@ public class Service {
         return entity;
     }
 
-
     private static Entity.SubEntity getSubEntity(WTPart part) {
+        // 发送部件到ERP之前请求接口查询是否在ERP已存在
+        String materialId = ext.kingdeeERP.viewMaterial.Service.process(part);
+        materialId = materialId == null ? "" : materialId;
+        String IsAutoSubmitAndAudit = StringUtils.isBlank(materialId) ? "true" : "false";
         Entity.SubEntity entity = new Entity.SubEntity();
         entity.setIsDeleteEntry("true");
         entity.setSubSystemId("");
-        entity.setIsVerifyBaseDataField("false");
+        entity.setIsVerifyBaseDataField("true");
         entity.setIsEntryBatchFill("true");
         entity.setValidateFlag("true");
         entity.setNumberSearch("true");
@@ -57,20 +60,21 @@ public class Service {
         entity.setIgnoreInterationFlag("");
         entity.setIsControlPrecision("false");
         entity.setValidateRepeatJson("false");
-        entity.setIsAutoSubmitAndAudit("true");
+        entity.setIsAutoSubmitAndAudit(IsAutoSubmitAndAudit);
         entity.setNeedReturnFields(new ArrayList<>());
         entity.setNeedUpDateFields(new ArrayList<>());
 
         // 填充 Model 对象的属性
         Entity.SubEntity.Model model = new Entity.SubEntity.Model();
-        model.setFCreateOrgId(fillFCreateOrgIdEntity(part));
-        model.setFUseOrgId(fillFUseOrgIdEntity(part));
+        model.setfMaterialId(materialId);
+        model.setFCreateOrgId(fillFCreateOrgIdEntity());
+        model.setFUseOrgId(fillFUseOrgIdEntity());
         model.setFNumber(part.getNumber());
         model.setFName(part.getName());
         model.setFSpecification(Config.Specification(part));
         model.setFDescription(Config.Description(part));
         model.setfSupplierFullName(Config.SupplierFullName(part));
-        model.setfIsCheckSample(processBoolean(Config.IsCheckSample(part)) ? "Y" : "N");
+        model.setfIsCheckSample(CommonUtil.processBoolean(Config.IsCheckSample(part)) ? "Y" : "N");
         model.setfClassification(Config.Classification(part));
         model.setFMnemonicCode(Config.MnemonicCode(part));
         model.setFMaterialGroup(fillFMaterialGroupEntity(part));
@@ -82,13 +86,13 @@ public class Service {
         return entity;
     }
 
-    private static Entity.SubEntity.Model.FCreateOrgId fillFCreateOrgIdEntity(WTPart part) {
+    private static Entity.SubEntity.Model.FCreateOrgId fillFCreateOrgIdEntity() {
         Entity.SubEntity.Model.FCreateOrgId fCreateOrgId = new Entity.SubEntity.Model.FCreateOrgId();
         fCreateOrgId.setFNumber("100");
         return fCreateOrgId;
     }
 
-    private static Entity.SubEntity.Model.FUseOrgId fillFUseOrgIdEntity(WTPart part) {
+    private static Entity.SubEntity.Model.FUseOrgId fillFUseOrgIdEntity() {
         Entity.SubEntity.Model.FUseOrgId fUseOrgId = new Entity.SubEntity.Model.FUseOrgId();
         fUseOrgId.setFNumber("100");
         return fUseOrgId;
@@ -96,7 +100,7 @@ public class Service {
 
     private static Entity.SubEntity.Model.FMaterialGroup fillFMaterialGroupEntity(WTPart part) {
         Entity.SubEntity.Model.FMaterialGroup fMaterialGroup = new Entity.SubEntity.Model.FMaterialGroup();
-        fMaterialGroup.setFNumber(Config.MaterialGroup(part));
+        fMaterialGroup.setFNumber(Config.Classification(part));
         return fMaterialGroup;
     }
 
@@ -107,14 +111,16 @@ public class Service {
         Entity.SubEntity.Model.SubHeadEntity.FBaseUnitId fBaseUnitId = new Entity.SubEntity.Model.SubHeadEntity.FBaseUnitId();
         fBaseUnitId.setFNumber(Config.BaseUnitId(part));
         subHeadEntity.setFBaseUnitId(fBaseUnitId);
-
         return subHeadEntity;
     }
 
     private static Entity.SubEntity.Model.SubHeadEntity3 fillSubHeadEntity3(WTPart part) {
         Entity.SubEntity.Model.SubHeadEntity3 subHeadEntity3 = new Entity.SubEntity.Model.SubHeadEntity3();
+        Entity.SubEntity.Model.SubHeadEntity3.FPurchaseOrgId fPurchaseOrgId = new Entity.SubEntity.Model.SubHeadEntity3.FPurchaseOrgId();
         Entity.SubEntity.Model.SubHeadEntity3.FDefaultVendor fDefaultVendor = new Entity.SubEntity.Model.SubHeadEntity3.FDefaultVendor();
         fDefaultVendor.setFNumber(Config.DefaultVendor(part));
+        fPurchaseOrgId.setFNumber(Config.PurchaseOrgId());
+        subHeadEntity3.setfPurchaseOrgId(fPurchaseOrgId);
         subHeadEntity3.setfDefaultVendor(fDefaultVendor);
         return subHeadEntity3;
     }
@@ -128,25 +134,10 @@ public class Service {
     private static Entity.SubEntity.Model.SubHeadEntity5 fillSubHeadEntity5(WTPart part) {
         Entity.SubEntity.Model.SubHeadEntity5 subHeadEntity5 = new Entity.SubEntity.Model.SubHeadEntity5();
         subHeadEntity5.setFlosspercent(0);
-        boolean value = processBoolean(Config.IsKitting(part));
+        boolean value = CommonUtil.processBoolean(Config.IsKitting(part));
         subHeadEntity5.setFIsKitting(value);
         subHeadEntity5.setFIsCompleteSet(value);
         return subHeadEntity5;
-    }
-
-    private static boolean processBoolean(String value) {
-        return value.equals("true") || value.equals("1") || value.equals("是");
-    }
-
-
-    private static String parseJson(Entity entity) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            return objectMapper.writeValueAsString(entity);
-        } catch (IOException e) {
-            logger.error("发送部件到ERP,转换json出错", e);
-        }
-        return "";
     }
 
 }

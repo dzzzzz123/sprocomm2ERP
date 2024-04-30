@@ -204,6 +204,8 @@ public class Entity {
         }
 
         public static class Model {
+            @JsonProperty("FMATERIALID")
+            private String fMaterialId;
             @JsonProperty("FCreateOrgId")
             private FCreateOrgId fCreateOrgId;
             @JsonProperty("FUseOrgId")
@@ -234,6 +236,16 @@ public class Entity {
             private SubHeadEntity4 subHeadEntity4;
             @JsonProperty("SubHeadEntity5")
             private SubHeadEntity5 subHeadEntity5;
+
+            @JsonIgnore
+            public String getfMaterialId() {
+                return fMaterialId;
+            }
+
+            @JsonIgnore
+            public void setfMaterialId(String fMaterialId) {
+                this.fMaterialId = fMaterialId;
+            }
 
             @JsonIgnore
             public FCreateOrgId getFCreateOrgId() {
@@ -475,8 +487,20 @@ public class Entity {
             }
 
             public static class SubHeadEntity3 {
+                @JsonProperty("FPurchaseOrgId")
+                private FPurchaseOrgId fPurchaseOrgId;
                 @JsonProperty("FDefaultVendor")
                 private FDefaultVendor fDefaultVendor;
+
+                @JsonIgnore
+                public FPurchaseOrgId getfPurchaseOrgId() {
+                    return fPurchaseOrgId;
+                }
+
+                @JsonIgnore
+                public void setfPurchaseOrgId(FPurchaseOrgId fPurchaseOrgId) {
+                    this.fPurchaseOrgId = fPurchaseOrgId;
+                }
 
                 @JsonIgnore
                 public FDefaultVendor getfDefaultVendor() {
@@ -486,6 +510,21 @@ public class Entity {
                 @JsonIgnore
                 public void setfDefaultVendor(FDefaultVendor fDefaultVendor) {
                     this.fDefaultVendor = fDefaultVendor;
+                }
+
+                public static class FPurchaseOrgId {
+                    @JsonProperty("FNumber")
+                    private String fNumber;
+
+                    @JsonIgnore
+                    public String getFNumber() {
+                        return fNumber;
+                    }
+
+                    @JsonIgnore
+                    public void setFNumber(String fNumber) {
+                        this.fNumber = fNumber;
+                    }
                 }
 
                 public static class FDefaultVendor {

@@ -1,4 +1,4 @@
-package ext.kingdeeERP.masterData;
+package ext.kingdeeERP.BOM;
 
 import com.ptc.core.components.beans.ObjectBean;
 import com.ptc.core.components.forms.DefaultObjectFormProcessor;
@@ -25,25 +25,25 @@ public class Processor extends DefaultObjectFormProcessor {
         String msg;
 
         try {
-            msg = Controller.sendParts2ERP(ref);
+            msg = Controller.sendBOM2ERP(ref);
         } catch (Exception e) {
             formresult = new FormResult(FormProcessingStatus.FAILURE);
             formresult.addFeedbackMessage(new FeedbackMessage(FeedbackType.FAILURE, SessionHelper.getLocale(), null,
-                    null, "发送物料主数据失败！", e.getMessage()));
-            logger.error("发送物料主数据失败", e);
+                    null, "发送BOM失败！", e.getMessage()));
+            logger.error("发送BOM失败", e);
             return formresult;
         }
 
-        if (msg != null && !msg.equals("IsSuccess")) {
+        if (msg != null && msg.equals("IsSuccess")) {
             formresult = new FormResult(FormProcessingStatus.FAILURE);
             formresult.addFeedbackMessage(
                     new FeedbackMessage(FeedbackType.FAILURE, SessionHelper.getLocale(), null, null, msg));
         } else {
             formresult = new FormResult(FormProcessingStatus.SUCCESS);
             formresult.addFeedbackMessage(new FeedbackMessage(FeedbackType.SUCCESS, SessionHelper.getLocale(), null,
-                    null, "物料发送到ERP成功!"));
+                    null, "BOM发送到ERP成功!"));
         }
         return formresult;
-
     }
+
 }
