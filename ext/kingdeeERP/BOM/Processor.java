@@ -7,6 +7,7 @@ import com.ptc.core.components.forms.FormResult;
 import com.ptc.core.components.util.FeedbackMessage;
 import com.ptc.core.ui.resources.FeedbackType;
 import com.ptc.netmarkets.util.beans.NmCommandBean;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import wt.fc.WTObject;
 import wt.session.SessionHelper;
@@ -34,7 +35,7 @@ public class Processor extends DefaultObjectFormProcessor {
             return formresult;
         }
 
-        if (msg != null && msg.equals("IsSuccess")) {
+        if (StringUtils.isNotBlank(msg)) {
             formresult = new FormResult(FormProcessingStatus.FAILURE);
             formresult.addFeedbackMessage(
                     new FeedbackMessage(FeedbackType.FAILURE, SessionHelper.getLocale(), null, null, msg));

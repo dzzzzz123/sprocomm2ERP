@@ -3,6 +3,7 @@ package ext.kingdeeERP.BOM.service;
 import ext.kingdeeERP.BOM.entity.SubPartEntity;
 import ext.kingdeeERP.Config;
 import ext.kingdeeERP.util.CommonUtil;
+import org.apache.commons.lang.StringUtils;
 import wt.fc.ObjectToObjectLink;
 import wt.part.WTPart;
 import wt.part.WTPartSubstituteLink;
@@ -16,7 +17,7 @@ public class SubPartEntityService {
      * @param part 部件对象
      * @return {@link SubPartEntity}
      */
-    public static SubPartEntity getSubPartEntity(WTPart part, ObjectToObjectLink link) {
+    public static SubPartEntity getSubPartEntity(WTPart part) {
         SubPartEntity subPartEntity = new SubPartEntity();
         subPartEntity.setfMaterialIdChild(fillFMaterialIdChild(part));
         subPartEntity.setfFixScrapQty("0.0");
@@ -38,17 +39,17 @@ public class SubPartEntityService {
      * @return {@link SubPartEntity}
      */
     public static SubPartEntity getMasterPartEntity(WTPart part, WTPartUsageLink link) {
-        SubPartEntity subPartEntity = getSubPartEntity(part, link);
+        SubPartEntity subPartEntity = getSubPartEntity(part);
         subPartEntity.setfMaterialType("1");
         subPartEntity.setfReplacePriority("0");
         subPartEntity.setfIskeyItem("true");
         subPartEntity.setfIsSkip(Config.IsSkip(link));
         subPartEntity.setfIsGetScrap(Config.IsGetScrap(link));
         subPartEntity.setfIsKeyComponent(Config.IsKeyComponent(link));
-        subPartEntity.setfOwnerTypeId("BD_OwnerOrg");
         subPartEntity.setFownerid(fillFOwnerId(part));
+        fillBD_OwnerOrg(subPartEntity);
         subPartEntity.setfIsCustomerService(Config.IsCustomerService(link));
-        subPartEntity.setfIsByCust(Config.IsByCust(link));
+        subPartEntity.setfIsByCust(Config.IsByCust(part));
         subPartEntity.setfItemNote(Config.ItemNote(link));
         subPartEntity.setfPositionNo(Config.PositionNo(link));
         return subPartEntity;
@@ -62,14 +63,15 @@ public class SubPartEntityService {
      * @return {@link SubPartEntity}
      */
     public static SubPartEntity getSubstitutePartEntity(WTPart part, WTPartSubstituteLink link) {
-        SubPartEntity subPartEntity = getSubPartEntity(part, link);
+        SubPartEntity subPartEntity = getSubPartEntity(part);
         subPartEntity.setfMaterialType("3");
         subPartEntity.setfIskeyItem("false");
         subPartEntity.setfIsSkip("false");
         subPartEntity.setfIsGetScrap("false");
         subPartEntity.setfIsKeyComponent(Config.IsKeyComponent(link));
-        subPartEntity.setfOwnerTypeId("BD_OwnerOrg");
-        subPartEntity.setFownerid(fillFOwnerId());
+        subPartEntity.setFownerid(fillFOwnerId(part));
+        fillBD_OwnerOrg(subPartEntity);
+        subPartEntity.setfIsByCust(Config.IsByCust(part));
         return subPartEntity;
     }
 
@@ -104,14 +106,22 @@ public class SubPartEntityService {
 
     private static SubPartEntity.FOWNERID fillFOwnerId(WTPart part) {
         SubPartEntity.FOWNERID fownerid = new SubPartEntity.FOWNERID();
-        fownerid.setFNumber(Config.OwnerId(part));
+        String ownerId = Config.OwnerId(part);
+        if (StringUtils.isBlank(ownerId)) {
+            fownerid.setFNumber("100");
+        } else {
+            fownerid.setFNumber(Config.OwnerId(part));
+        }
         return fownerid;
     }
 
-    private static SubPartEntity.FOWNERID fillFOwnerId() {
-        SubPartEntity.FOWNERID fownerid = new SubPartEntity.FOWNERID();
-        fownerid.setFNumber("100");
-        return fownerid;
+    private static void fillBD_OwnerOrg(SubPartEntity subPartEntity) {
+        SubPartEntity.FOWNERID fownerid = subPartEntity.getFownerid();
+        String fNumber = fownerid.getFNumber();
+        if (fNumber.equals("100")) {
+            subPartEntity.setfOwnerTypeId("BD_OwnerOrg");
+        } else {
+            subPartEntity.setfOwnerTypeId("BD_Customer");
+        }
     }
-
 }

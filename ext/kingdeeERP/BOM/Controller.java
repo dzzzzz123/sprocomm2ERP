@@ -1,14 +1,25 @@
 package ext.kingdeeERP.BOM;
 
+import ext.generic.reviewObject.model.ProcessReviewObjectLink;
+import ext.generic.reviewObject.model.ProcessReviewObjectLinkHelper;
 import ext.kingdeeERP.BOM.service.Service;
-import ext.kingdeeERP.util.CommonUtil;
 import ext.kingdeeERP.util.PersistenceUtil;
+import ext.kingdeeERP.util.WorkFlowUtil;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import wt.fc.QueryResult;
 import wt.fc.WTObject;
 import wt.part.WTPart;
+import wt.util.WTException;
+import wt.workflow.engine.WfProcess;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Controller {
+
+    static Logger logger = LogManager.getLogger(Controller.class);
 
     /**
      * 发送部件给ERP
@@ -25,9 +36,7 @@ public class Controller {
             return part.getNumber() + " 该BOM的最上层部件是检出状态!请先检入该部件后操作!";
         }
         // 发送到ERP
-        String resultJson = Service.sendSingleBOM2ERP(part);
-        // 对接口请求结果中的错误信息处理后返回错误信息
-        return CommonUtil.processResult(resultJson);
+        return Service.sendSingleBOM2ERP(part);
     }
 
     /**
@@ -38,11 +47,35 @@ public class Controller {
      */
     public static String sendParts2ERPInProgress(WTObject ref) {
         StringBuilder errMsg = new StringBuilder();
-        List<WTPart> list = CommonUtil.getListFromPBO(ref, WTPart.class);
+        List<WTPart> list = WorkFlowUtil.getListFromPBO(ref, WTPart.class);
         for (WTPart part : list) {
-            errMsg.append(sendBOM2ERP(part)).append("/n");
+            String msg = sendBOM2ERP(part);
+            if (StringUtils.isNotBlank(msg)) {
+                errMsg.append(msg).append("\n");
+            }
         }
+        list.addAll(getProcessReviewObj(ref));
         return errMsg.toString();
     }
 
+    public static List<WTPart> getProcessReviewObj(WTObject ref) {
+        List<WTPart> list = new ArrayList<>();
+        try {
+            WfProcess wfprocess = WorkFlowUtil.getProcessByPbo(ref);
+            if (wfprocess != null) {
+                QueryResult queryresult = ProcessReviewObjectLinkHelper.service
+                        .getProcessReviewObjectLinkByRoleA(wfprocess);
+                while (queryresult != null && queryresult.hasMoreElements()) {
+                    ProcessReviewObjectLink link = (ProcessReviewObjectLink) queryresult.nextElement();
+                    WTObject obj = (WTObject) link.getRoleBObject();
+                    if (obj instanceof WTPart) {
+                        list.add((WTPart) obj);
+                    }
+                }
+            }
+        } catch (WTException e) {
+            logger.error("从PBO对象钟获取部件对象时出错", e);
+        }
+        return list;
+    }
 }

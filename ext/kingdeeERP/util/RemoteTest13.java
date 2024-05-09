@@ -1,24 +1,16 @@
 package ext.kingdeeERP.util;
 
-import wt.fc.PersistenceHelper;
-import wt.fc.QueryResult;
+import wt.content.ApplicationData;
 import wt.fc.ReferenceFactory;
 import wt.method.RemoteAccess;
 import wt.method.RemoteMethodServer;
 import wt.part.WTPart;
-import wt.part.WTPartSubstituteLink;
-import wt.part.WTPartUsageLink;
-import wt.pds.StatementSpec;
-import wt.query.QueryException;
-import wt.query.QuerySpec;
-import wt.query.SearchCondition;
-import wt.util.WTException;
+import ext.kingdeeERP.Config;
+
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * 由于Windchill系统重启过慢，所以这个类是用来进行远程方法调用的类 这个方法所调用
@@ -36,23 +28,24 @@ import java.util.List;
  *
  * @author dz
  */
-public class RemoteTest12 implements RemoteAccess, Serializable {
+public class RemoteTest13 implements RemoteAccess, Serializable {
 
     private static final long serialVersionUID = 1L;
 
     public static void main(String[] args) throws Exception {
         ReferenceFactory rf = new ReferenceFactory();
 //		WTDocument doc = (WTDocument) rf.getReference("OR:wt.doc.WTDocument:1796110").getObject();
-        WTPart part = (WTPart) rf.getReference("OR:wt.part.WTPart:320113").getObject();
+        WTPart part = (WTPart) rf.getReference("OR:wt.part.WTPart:445016118").getObject();
 //		EPMDocument epm = (EPMDocument) rf.getReference("OR:wt.epm.EPMDocument:529648").getObject();
 //		WTChangeRequest2 ecr = (WTChangeRequest2) rf.getReference("OR:wt.change2.WTChangeRequest2:2113629").getObject();
         // WorkItem wi = (WorkItem)
         // rf.getReference("OR:wt.workflow.work.WorkItem:2538761").getObject();
 //		PlanActivity planActivity = (PlanActivity) rf
 //				.getReference("OR:com.ptc.projectmanagement.plan.PlanActivity:849396").getObject();
+        // ApplicationData applicationData = (ApplicationData) rf.getReference("OR:wt.content.ApplicationData:2678304").getObject();
 //		String flag = (String) invoke("process", RemoteTest28.class.getName(), null, new Class[] { WorkItem.class },
 //				new Object[] { wi });
-        String flag = (String) invoke("process", RemoteTest12.class.getName(), null, new Class[]{WTPart.class},
+        String flag = (String) invoke("process", RemoteTest13.class.getName(), null, new Class[]{WTPart.class},
                 new Object[]{part});
         System.out.println("flag: " + flag);
     }
@@ -72,37 +65,10 @@ public class RemoteTest12 implements RemoteAccess, Serializable {
         }
     }
 
-    public static void process(WTPart faPart, WTPart sonPart) {
-        try {
-            WTPartUsageLink link = CommonUtil.getLinkByPart(faPart, sonPart);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public static void process(WTPart part) {
+        String ownerId = Config.OwnerId(part);
+        System.out.println("ownerId: "+ ownerId);
     }
 
-    public static List<WTPartSubstituteLink> getSubstituteLinks(WTPartUsageLink usageLink) {
-        if (usageLink == null) {
-            return null;
-        }
-        List<WTPartSubstituteLink> list = new ArrayList<>();
-        long masterId = PersistenceHelper.getObjectIdentifier(usageLink).getId();
-        int[] index = {0};
-        try {
-            QuerySpec qs = new QuerySpec(WTPartSubstituteLink.class);
-            qs.appendWhere(new SearchCondition(WTPartSubstituteLink.class, "roleAObjectRef.key.id",
-                    SearchCondition.EQUAL, masterId), index);
-            QueryResult qr = PersistenceHelper.manager.find((StatementSpec) qs);
-            while (qr.hasMoreElements()) {
-                WTPartSubstituteLink sLink = (WTPartSubstituteLink) qr.nextElement();
-                list.add(sLink);
-            }
-        } catch (QueryException e) {
-            e.printStackTrace();
-        } catch (WTException e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
 
 }

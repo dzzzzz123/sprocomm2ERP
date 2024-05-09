@@ -4,6 +4,7 @@ import ext.kingdeeERP.BOM.entity.Entity;
 import ext.kingdeeERP.BOM.entity.SubPartEntity;
 import ext.kingdeeERP.Config;
 import ext.kingdeeERP.util.CommonUtil;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import wt.part.WTPart;
@@ -17,20 +18,32 @@ import java.util.List;
 public class Service {
 
     final static Logger logger = LogManager.getLogger(Service.class);
+    private static StringBuffer allErrorMsg = new StringBuffer();
 
     /**
-     * 发送单个部件
+     * 发送单个BOM
      *
      * @param part 部件
      * @return {@link String} 错误信息
      */
     public static String sendSingleBOM2ERP(WTPart part) {
-        String result;
+        allErrorMsg = new StringBuffer();
         Entity entity = getEntity(part);
         String json = CommonUtil.parseJson(entity);
-        System.out.println(json);
-        result = CommonUtil.requestInterface(Config.BOMUrl(), "", "", json, "POST", null);
-        return result;
+        // System.out.println(json);
+        String resultJson = CommonUtil.requestInterface(Config.BOMUrl(), "", "", json, "POST", null);
+        // 对接口请求结果中的错误信息处理后返回错误信息
+        String errorMsg = CommonUtil.processResult(resultJson);
+        if (StringUtils.isNotBlank(errorMsg)) {
+            if (errorMsg.equals("IsSuccess")) {
+                errorMsg = "";
+            } else {
+                errorMsg = part.getNumber() + " 发送BOM到ERP失败!原因:" + errorMsg;
+            }
+            return errorMsg + allErrorMsg;
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -91,10 +104,10 @@ public class Service {
         List<SubPartEntity> subPartEntities = new ArrayList<>();
         List<WTPart> subParts = CommonUtil.getBomByPart(part);
         // 发送BOM之前先发送BOM头到ERP中
-        ext.kingdeeERP.masterData.Service.sendSinglePart2ERP(part);
+        sendPart2ERP(part);
         for (int i = 0; i < subParts.size(); i++) {
             // 发送BOM之前先发送BOM中的所有物料到ERP中
-            ext.kingdeeERP.masterData.Service.sendSinglePart2ERP(subParts.get(i));
+            sendPart2ERP(subParts.get(i));
             subPartEntities.addAll(fillSingleSubPartEntity(part, subParts.get(i), i + 1));
         }
         return subPartEntities.toArray();
@@ -115,7 +128,7 @@ public class Service {
                 // 获取替代部件
                 WTPart substitutePart = CommonUtil.getWTPartByMaster((WTPartMaster) wtPartSubstituteLink.getRoleBObject());
                 // 发送BOM之前先发送替代料到ERP中
-                ext.kingdeeERP.masterData.Service.sendSinglePart2ERP(substitutePart);
+                sendPart2ERP(substitutePart);
                 SubPartEntity substitutePartEntity = SubPartEntityService.getSubstitutePartEntity(substitutePart, wtPartSubstituteLink);
                 substitutePartEntity.setfReplaceGroup(String.valueOf(replaceGroup));
                 substitutePartEntity.setfReplacePriority(String.valueOf(i + 1));
@@ -158,5 +171,17 @@ public class Service {
         Entity.SubEntity.Model.FMATERIALID fMaterialId = new Entity.SubEntity.Model.FMATERIALID();
         fMaterialId.setFNumber(part.getNumber());
         return fMaterialId;
+    }
+
+    /**
+     * 发送部件到ERP并处理已经处理的json中的信息来
+     *
+     * @param part 部件对象
+     */
+    private static void sendPart2ERP(WTPart part) {
+        String errorMsg = ext.kingdeeERP.masterData.Controller.sendParts2ERP(part);
+        if (StringUtils.isNotBlank(errorMsg)) {
+            allErrorMsg.append(errorMsg).append("\n");
+        }
     }
 }

@@ -105,16 +105,6 @@ public class Config {
         return BaseUnitMapping.get(baseUnit);
     }
 
-    private static HashMap<String, String> getMapping(String ProKey) {
-        HashMap<String, String> sourceMapping = new HashMap<>();
-        String statePatternStr = properties.getValueByKey(ProKey);
-        String[] statePatterns = statePatternStr.split("/");
-        for (String str : statePatterns) {
-            String[] pattern = str.split(":");
-            sourceMapping.put(pattern[0], pattern[1]);
-        }
-        return sourceMapping;
-    }
 
     // BOM相关配置读取
     public static String BillType() {
@@ -161,8 +151,8 @@ public class Config {
         return properties.getValueByKey(link, "IBA.IsCustomerService");
     }
 
-    public static String IsByCust(WTPartUsageLink link) {
-        return properties.getValueByKey(link, "IBA.IsByCust");
+    public static String IsByCust(WTPart part) {
+        return properties.getValueByKey(part, "IBA.IsByCust");
     }
 
     public static String ItemNote(WTPartUsageLink link) {
@@ -218,11 +208,46 @@ public class Config {
     }
 
     public static Set<String> PermissionPartState() {
+        return getSetting("checkIn.permission.State");
+    }
+
+    public static String MaterialGroup() {
+        return properties.getValueByKey("material.group");
+    }
+
+    public static String BOMGroup() {
+        return properties.getValueByKey("BOM.group");
+    }
+
+    public static Set<String> MaterialState() {
+        return getSetting("material.state");
+    }
+
+    public static Set<String> BOMState() {
+        return getSetting("BOM.state");
+    }
+
+    public static String ORGName() {
+        return properties.getValueByKey("ORG.name");
+    }
+
+    private static Set<String> getSetting(String ProKey) {
         Set<String> stateSet = new HashSet<>();
-        String[] statePatterns = properties.getValueByKey("checkIn.permission.State").split("/");
+        String[] statePatterns = properties.getValueByKey(ProKey).split("/");
         for (String str : statePatterns) {
             stateSet.add(str);
         }
         return stateSet;
+    }
+
+    private static HashMap<String, String> getMapping(String ProKey) {
+        HashMap<String, String> sourceMapping = new HashMap<>();
+        String statePatternStr = properties.getValueByKey(ProKey);
+        String[] statePatterns = statePatternStr.split("/");
+        for (String str : statePatterns) {
+            String[] pattern = str.split(":");
+            sourceMapping.put(pattern[0], pattern[1]);
+        }
+        return sourceMapping;
     }
 }

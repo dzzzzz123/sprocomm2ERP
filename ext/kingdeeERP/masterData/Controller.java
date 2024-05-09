@@ -3,6 +3,7 @@ package ext.kingdeeERP.masterData;
 import ext.kingdeeERP.Config;
 import ext.kingdeeERP.util.CommonUtil;
 import ext.kingdeeERP.util.PersistenceUtil;
+import ext.kingdeeERP.util.WorkFlowUtil;
 import org.apache.log4j.Logger;
 import wt.fc.WTObject;
 import wt.part.WTPart;
@@ -39,6 +40,7 @@ public class Controller {
         } else {
             Config.setPart2ERPStatus(part, "物料发送到ERP失败");
             Config.setERPErrorMsg(part, resultMsg);
+            resultMsg = part.getNumber() + " 发送到ERP失败!原因:" + resultMsg;
             return resultMsg;
         }
     }
@@ -53,7 +55,7 @@ public class Controller {
             // 发送部件到ERP
             String msg = sendParts2ERP(part);
             if (msg != null && !msg.equals("IsSuccess")) {
-                logger.error("当部件为非项目部件，且正在工作状态时，发送部件到ERP出错:/n" + msg);
+                logger.error("当部件为非项目部件，且正在工作状态时，发送部件到ERP出错:" + msg);
             }
         }
     }
@@ -85,11 +87,11 @@ public class Controller {
      */
     public static String sendParts2ERPInProgress(WTObject ref) {
         StringBuilder errMsg = new StringBuilder();
-        List<WTPart> list = CommonUtil.getListFromPBO(ref, WTPart.class);
+        List<WTPart> list = WorkFlowUtil.getListFromPBO(ref, WTPart.class);
         for (WTPart part : list) {
             // 获取最新部件发送到ERP
             part = (WTPart) PersistenceUtil.getLatestObj(part.getMaster());
-            errMsg.append(sendParts2ERP(part)).append("/n");
+            errMsg.append(sendParts2ERP(part)).append("\n");
         }
         return errMsg.toString();
     }

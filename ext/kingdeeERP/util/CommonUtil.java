@@ -1,6 +1,8 @@
 package ext.kingdeeERP.util;
 
+import com.ptc.windchill.uwgm.common.container.OrganizationHelper;
 import com.sun.jndi.toolkit.chars.BASE64Encoder;
+import ext.kingdeeERP.Config;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -9,16 +11,17 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.http.*;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
-import wt.change2.ChangeHelper2;
-import wt.change2.WTChangeActivity2;
-import wt.change2.WTChangeOrder2;
-import wt.change2.WTChangeRequest2;
 import wt.fc.PersistenceHelper;
 import wt.fc.QueryResult;
-import wt.fc.WTObject;
-import wt.maturity.MaturityHelper;
-import wt.maturity.PromotionNotice;
+import wt.inf.container.OrgContainer;
+import wt.inf.container.PrincipalSpec;
+import wt.inf.container.WTContainerHelper;
+import wt.inf.container.WTContainerRef;
 import wt.method.MethodContext;
+import wt.org.DirectoryContextProvider;
+import wt.org.OrganizationServicesHelper;
+import wt.org.WTGroup;
+import wt.org.WTOrganization;
 import wt.part.*;
 import wt.pds.StatementSpec;
 import wt.pom.WTConnection;
@@ -143,7 +146,7 @@ public class CommonUtil {
         }
         return null;
     }
-    
+
     /**
      * 连接Windchill数据库来运行自定义sql
      *
@@ -368,44 +371,6 @@ public class CommonUtil {
     }
 
     /**
-     * 将传入的PBO解析为方便处理的List<T>
-     *
-     * @param obj        PBO对象
-     * @param targetType 想解析得到的列表包含对象
-     * @return {@link List}<{@link T}>
-     */
-    public static <T> List<T> getListFromPBO(WTObject obj, Class<T> targetType) {
-        List<T> list = new ArrayList<>();
-        try {
-            if (targetType.isInstance(obj)) {
-                list.add(targetType.cast(obj));
-            } else if (obj instanceof PromotionNotice) {
-                PromotionNotice pn = (PromotionNotice) obj;
-                QueryResult qr = MaturityHelper.service.getPromotionTargets(pn);
-                list = CommonUtil.getListFromQR(qr, targetType);
-            } else if (obj instanceof WTChangeOrder2) {
-                WTChangeOrder2 co = (WTChangeOrder2) obj;
-                QueryResult qr = ChangeHelper2.service.getChangeablesAfter(co);
-                list = CommonUtil.getListFromQR(qr, targetType);
-            } else if (obj instanceof WTChangeActivity2) {
-                WTChangeActivity2 eca = (WTChangeActivity2) obj;
-                QueryResult qr = ChangeHelper2.service.getChangeablesAfter(eca);
-                list = CommonUtil.getListFromQR(qr, targetType);
-            } else if (obj instanceof WTChangeRequest2) {
-                WTChangeRequest2 ecr = (WTChangeRequest2) obj;
-                QueryResult qr = ChangeHelper2.service.getChangeables(ecr);
-                list = CommonUtil.getListFromQR(qr, targetType);
-            } else {
-                logger.error("将PBO转换为其他持久化对象时出错: 数据不正确！");
-            }
-        } catch (WTException e) {
-            logger.error("将PBO转换为其他持久化对象时出错", e);
-        }
-        return list;
-    }
-
-
-    /**
      * 从QueryResult中获取需要类型的对象数据
      *
      * @param qr    结果集对象
@@ -422,6 +387,30 @@ public class CommonUtil {
             }
         }
         return list;
+    }
+
+    /**
+     * 获取指定名称的组对象
+     *
+     * @param GroupName 组名
+     * @return {@link WTGroup }
+     */
+    public static WTGroup getGroup(String GroupName) {
+        WTGroup foundGroup = null;
+        try {
+            WTOrganization org = OrganizationHelper.getOrganizationByName(Config.ORGName());
+            OrgContainer orgContainer = WTContainerHelper.service.getOrgContainer(org);
+            PrincipalSpec principalSpec = new PrincipalSpec(WTContainerRef.newWTContainerRef(orgContainer),
+                    WTGroup.class);
+            principalSpec.setPerformLookup(false);
+            principalSpec.setIncludeAllServices(true);
+            DirectoryContextProvider[] directoryContextProviders = WTContainerHelper.service
+                    .getPublicContextProviders(principalSpec);
+            foundGroup = OrganizationServicesHelper.manager.getGroup(GroupName, directoryContextProviders[0]);
+        } catch (Exception e) {
+            logger.error("获取指定名称的组对象时出错", e);
+        }
+        return foundGroup;
     }
 
 }

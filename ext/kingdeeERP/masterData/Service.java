@@ -23,7 +23,7 @@ public class Service {
         String result;
         Entity entity = getEntity(part);
         String json = CommonUtil.parseJson(entity);
-        System.out.println(json);
+        // System.out.println(json);
         result = CommonUtil.requestInterface(Config.PartUrl(), "", "", json, "POST", null);
         return result;
     }
