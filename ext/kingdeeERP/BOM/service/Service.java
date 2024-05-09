@@ -179,7 +179,7 @@ public class Service {
      * @param part 部件对象
      */
     private static void sendPart2ERP(WTPart part) {
-        String errorMsg = ext.kingdeeERP.masterData.Controller.sendParts2ERP(part);
+        String errorMsg = ext.kingdeeERP.masterData.Controller.sendParts2ERPNoToken(part);
         if (StringUtils.isNotBlank(errorMsg)) {
             allErrorMsg.append(errorMsg).append("\n");
         }

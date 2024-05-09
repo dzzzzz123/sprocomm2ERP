@@ -25,6 +25,10 @@ public class Controller {
         WTPart part = (WTPart) ref;
         // 获取token
         ext.kingdeeERP.token.Service.process();
+        return sendParts2ERPNoToken(part);
+    }
+
+    public static String sendParts2ERPNoToken(WTPart part) {
         // 必须检入状态才能发送
         if (PersistenceUtil.isCheckOut(part)) {
             return part.getNumber() + " 该部件是检出状态!请先检入该部件后操作!";
@@ -87,11 +91,13 @@ public class Controller {
      */
     public static String sendParts2ERPInProgress(WTObject ref) {
         StringBuilder errMsg = new StringBuilder();
+        // 获取token
+        ext.kingdeeERP.token.Service.process();
         List<WTPart> list = WorkFlowUtil.getListFromPBO(ref, WTPart.class);
         for (WTPart part : list) {
             // 获取最新部件发送到ERP
             part = (WTPart) PersistenceUtil.getLatestObj(part.getMaster());
-            errMsg.append(sendParts2ERP(part)).append("\n");
+            errMsg.append(sendParts2ERPNoToken(part)).append("\n");
         }
         return errMsg.toString();
     }

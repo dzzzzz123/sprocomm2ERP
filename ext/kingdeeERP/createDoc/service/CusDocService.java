@@ -1,4 +1,4 @@
-package ext.kingdeeERP.PNGDoc.service;
+package ext.kingdeeERP.createDoc.service;
 
 import ext.kingdeeERP.util.WatermarkUtil;
 import wt.content.*;
@@ -17,6 +17,7 @@ import wt.part.WTPartReferenceLink;
 import wt.pom.PersistenceException;
 import wt.pom.Transaction;
 import wt.query.QuerySpec;
+import wt.util.WTException;
 import wt.query.SearchCondition;
 import wt.session.SessionHelper;
 import wt.util.WTException;
@@ -34,6 +35,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
+import java.util.ArrayList;
 
 import static wt.org.WTPrincipalReference.newWTPrincipalReference;
 
@@ -45,12 +47,11 @@ public class CusDocService {
 
     /**
      * 处理新建文档
-     *
      * @param doc
      */
     public static String process(WTDocument doc) {
         try {
-            File file = new File("D:/temp/");
+            File file = new File("H:/temp/");
             System.out.println("doc = " + doc);
             ContentHolder holder = ContentHelper.service.getContents(doc);
             System.out.println("holder = " + holder);
@@ -58,12 +59,19 @@ public class CusDocService {
             // 判断是否存在该编号的组件
             String name = doc.getName();
             String[] split = name.split("-");
-            String partNum = split[0];
-            String partName = split[1];
+            // 如果文件名中没有-抛出一个异常 如果分割后发现数组长度为1抛出异常
+            if (split.length == 1){
+                throw new WTException("请检查图片文件名是否符合规范或相关部件是否存在");
+            }
+            String partNum =  split[0];
+            String partName =  split[1];
             WTPart wtPartByNumber = CusDocService.getWTPartByNumber(partNum);
-            if (wtPartByNumber == null) {
+            if(wtPartByNumber == null) {
                 return partNum;
             }
+            ArrayList<WTDocument> wtDocuments = new ArrayList<>();
+            wtDocuments.add(doc);
+            createDocPartLink(wtPartByNumber, wtDocuments, "Describe");
             while (contentsByRole.hasMoreElements()) {
                 Object obj = contentsByRole.nextElement();
                 System.out.println("obj = " + obj);
@@ -75,7 +83,7 @@ public class CusDocService {
                     ContentServerHelper.service.writeContentStream(applicationData, file.getCanonicalPath());
                     // 添加水印
                     WatermarkUtil.addWatermark(file, name);
-                    CusDocService.update(doc, applicationData, file);
+                    CusDocService.update(doc, applicationData,file);
                     // 删除临时文件
                     file.deleteOnExit();
                 }
@@ -89,10 +97,8 @@ public class CusDocService {
         }
         return null;
     }
-
     /**
      * 更新文档
-     *
      * @param doc
      * @param oldAppData
      * @param pngFile
@@ -173,7 +179,7 @@ public class CusDocService {
             switch (actionType) {
                 case "Describe":
                     // 创建说明方文档关联关系
-                    part = (WTPart) checkoutObj(part);
+                    part = (WTPart)checkoutObj(part);
                     for (WTDocument doc : docList) {
                         WTPartDescribeLink describeLink = WTPartDescribeLink.newWTPartDescribeLink(part, doc);
                         PersistenceServerHelper.manager.insert(describeLink);
@@ -182,7 +188,7 @@ public class CusDocService {
                     break;
                 case "Reference":
                     // 创建参考文档关联关系
-                    part = (WTPart) checkoutObj(part);
+                    part = (WTPart)checkoutObj(part);
                     for (WTDocument doc : docList) {
                         WTPartReferenceLink ref_link = WTPartReferenceLink.newWTPartReferenceLink(part,
                                 (WTDocumentMaster) doc.getMaster());
@@ -252,9 +258,9 @@ public class CusDocService {
     }
 
 
+
     /**
      * 判断文档和部件的版本
-     *
      * @param revisionControlled
      * @return
      */
@@ -265,7 +271,6 @@ public class CusDocService {
 
     /**
      * 将String的集合的对象拼接、并输出成字符串
-     *
      * @param list
      * @return
      */

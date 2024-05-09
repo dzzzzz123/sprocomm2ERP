@@ -21,6 +21,11 @@ public class BaseFilter {
     static Logger logger = LogManager.getLogger(BaseFilter.class);
 
     public static UIValidationStatus baseValidateAction(UIValidationCriteria uiValidationCriteria, String Group, Set<String> permissionState) {
+        System.out.println("Group: "+Group);
+        System.out.println("permissionState: ");
+        for(String str : permissionState){
+            System.out.println("str: "+str);
+        }
         UIValidationStatus status = UIValidationStatus.HIDDEN;
         try {
             WTPrincipal currentUser = SessionHelper.manager.getPrincipal();
@@ -30,9 +35,12 @@ public class BaseFilter {
             Persistable object = contextObject.getObject();
             boolean stateFlag = false;
             if (object instanceof WTPart) {
-                WTPart part = new WTPart();
-                String partDisState = part.getState().getState().getDisplay(Locale.CHINA);
-                stateFlag = permissionState.contains(partDisState);
+                WTPart part = (WTPart) object;
+                System.out.println("part: "+part);
+                if (part!=null) {
+                    String partDisState = part.getState().getState().getDisplay(Locale.CHINA);
+                    stateFlag = permissionState.contains(partDisState);
+                }
             }
             if (groupFlag && stateFlag) {
                 status = UIValidationStatus.ENABLED;
